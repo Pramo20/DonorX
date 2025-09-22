@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,26 +14,94 @@ import Link from "next/link"
 import { fetchCampaign, fetchDonationsCount, fetchDonation } from "@/lib/contract"
 import { ethers } from "ethers"
 import { CampaignActions } from "@/components/campaign-actions"
+import { useWallet } from "@/hooks/use-wallet"
 
-async function getData(id: number) {
-  const campaign = await fetchCampaign(id)
-  const donorCount = await fetchDonationsCount(id)
-  const recentCount = Math.min(donorCount, 5)
-  const donations = await Promise.all(
-    Array.from({ length: recentCount }, (_, i) => fetchDonation(id, donorCount - 1 - i)), // latest first
-  )
-  return { campaign, donorCount, donations }
-}
-
-export default async function CampaignDetailPage({ params }: { params: { id: string } }) {
+export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const id = Number(params.id)
-  let campaign, donorCount, donations
-  try {
-    const data = await getData(id)
-    campaign = data.campaign
-    donorCount = data.donorCount
-    donations = data.donations
-  } catch (e: any) {
+  const { isConnected, chainId, connectWallet } = useWallet()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [campaign, setCampaign] = useState<any>(null)
+  const [donations, setDonations] = useState<any[]>([])
+  const [donorCount, setDonorCount] = useState(0)
+
+  const isSepolia = useMemo(() => chainId === 11155111, [chainId])
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const c = await fetchCampaign(id)
+        const dc = await fetchDonationsCount(id)
+        const recentCount = Math.min(dc, 5)
+        const ds = await Promise.all(
+          Array.from({ length: recentCount }, (_, i) => fetchDonation(id, dc - 1 - i)),
+        )
+        if (!active) return
+        setCampaign(c)
+        setDonorCount(dc)
+        setDonations(ds)
+      } catch (e: any) {
+        if (!active) return
+        setError(e?.message || "Failed to load campaign.")
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    // Load as soon as MetaMask is available; connection not strictly required for reads
+    load()
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  if (!isSepolia) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Switch to Sepolia</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                Please connect your wallet and switch to the Sepolia testnet to view this campaign.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={connectWallet}>Connect / Switch</Button>
+                <Button variant="outline" asChild>
+                  <Link href="/">Go Home</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading campaign…</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">Please wait while we fetch on-chain data.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !campaign) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -40,7 +111,7 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
               <CardTitle>Campaign Not Found</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{e?.message || "We couldn't find this campaign on Sepolia."}</p>
+              <p className="text-muted-foreground">{error || "We couldn't find this campaign on Sepolia."}</p>
             </CardContent>
           </Card>
         </div>
@@ -173,27 +244,7 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
                 {/* Donation Form */}
                 <DonationForm campaignId={id} />
 
-                <Separator />
-
-                {/* Share */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Share Campaign</span>
-                  <Button variant="outline" size="sm">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
-                  </Button>
-                </div>
-
-                <Separator />
-
-                {/* Campaign Actions: Withdraw / Refund */}
-                <CampaignActions
-                  campaignId={id}
-                  beneficiary={campaign.beneficiary}
-                  deadline={campaign.deadline}
-                  goalWei={campaign.goalWei}
-                  raisedWei={campaign.raisedWei}
-                />
+                {/* Removed Share and Withdraw/Refund sections per user request */}
               </CardContent>
             </Card>
 

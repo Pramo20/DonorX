@@ -77,7 +77,9 @@ export function useWallet() {
       if (accounts.length === 0) {
         setWalletState(initialState)
       } else {
-        setWalletState((prev) => ({ ...prev, address: accounts[0] }))
+        // Mark as connected when at least one account is present so other
+        // components using this hook enable their UI controls.
+        setWalletState((prev) => ({ ...prev, isConnected: true, address: accounts[0] }))
       }
     }
 

@@ -20,7 +20,7 @@ export interface DonationDto {
 }
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string
-const RPC_URL = "https://rpc.sepolia.org"
+const RPC_URL = "https://ethereum-sepolia.publicnode.com" // unused now; kept for reference
 const SEPOLIA_CHAIN_ID_DEC = 11155111
 const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7"
 
@@ -47,17 +47,15 @@ const DONATION_PORTAL_ABI = [
 ]
 
 export function getReadProvider(): ethers.Provider {
-  // Option 1: Use MetaMask directly when available in the browser
-  if (typeof window !== "undefined") {
-    const { ethereum } = window as any
-    if (ethereum) {
-      // Ensure Sepolia and use the wallet's provider for reads
-      ensureSepoliaNetwork(ethereum).catch(() => {})
-      return new ethers.BrowserProvider(ethereum)
-    }
+  if (typeof window === "undefined") {
+    throw new Error("Reads require MetaMask in the browser")
   }
-  // Fallback (SSR or no wallet): Sepolia public RPC
-  return new ethers.JsonRpcProvider(RPC_URL)
+  const { ethereum } = window as any
+  if (!ethereum) {
+    throw new Error("MetaMask is not installed")
+  }
+  ensureSepoliaNetwork(ethereum).catch(() => {})
+  return new ethers.BrowserProvider(ethereum)
 }
 
 export async function getSigner(): Promise<ethers.Signer> {
@@ -212,10 +210,8 @@ async function ensureSepoliaNetwork(ethereum: any): Promise<void> {
 }
 
 async function assertSepoliaRead(): Promise<void> {
-  // On the server, don't block rendering if RPC verification fails; we already use a Sepolia RPC URL.
-  if (typeof window === "undefined") {
-    return
-  }
+  // Requires browser + MetaMask
+  if (typeof window === "undefined") return
 
   const provider = getReadProvider()
   try {
@@ -228,7 +224,7 @@ async function assertSepoliaRead(): Promise<void> {
       return
     }
   } catch {
-    // In the browser without ethereum, just rely on RPC; don't block UI
+    // Without ethereum, we'll fail reads elsewhere with MetaMask requirement
     return
   }
 }

@@ -25,7 +25,8 @@ export function DonationForm({ campaignId }: DonationFormProps) {
   const [success, setSuccess] = useState(false)
   const [txHash, setTxHash] = useState("")
 
-  const { isConnected, error: walletError } = useWallet()
+  const { isConnected, chainId, error: walletError, connectWallet } = useWallet()
+  const isSepolia = chainId === 11155111
   const [localError, setLocalError] = useState<string | null>(null)
 
   const presetAmounts = ["0.1", "0.5", "1.0", "2.0"]
@@ -36,6 +37,10 @@ export function DonationForm({ campaignId }: DonationFormProps) {
 
   const handleDonate = async () => {
     if (!isConnected) return
+    if (!isSepolia) {
+      setLocalError("Wrong network: please switch to Sepolia and try again.")
+      return
+    }
     if (!amount || Number.parseFloat(amount) <= 0) return
 
     setIsSubmitting(true)
@@ -98,6 +103,15 @@ export function DonationForm({ campaignId }: DonationFormProps) {
         </Alert>
       )}
 
+      {isConnected && !isSepolia && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You are on the wrong network. Please switch to Sepolia to donate.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-4">
         <div>
           <Label htmlFor="amount">Donation Amount (ETH)</Label>
@@ -148,7 +162,7 @@ export function DonationForm({ campaignId }: DonationFormProps) {
       )}
 
       {isConnected ? (
-        <Button className="w-full" size="lg" onClick={handleDonate} disabled={!amount || Number.parseFloat(amount) <= 0 || isSubmitting}>
+        <Button className="w-full" size="lg" onClick={handleDonate} disabled={!isConnected || !amount || Number.parseFloat(amount) <= 0 || isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
