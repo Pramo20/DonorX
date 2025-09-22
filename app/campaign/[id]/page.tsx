@@ -6,78 +6,30 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { DonationForm } from "@/components/donation-form"
-import { Share2, Heart, Calendar, MapPin, ExternalLink, Shield } from "lucide-react"
+import { Share2, Heart, Calendar, MapPin, Shield } from "lucide-react"
 import Link from "next/link"
+import { fetchCampaign, fetchDonationsCount, fetchDonation } from "@/lib/contract"
+import { ethers } from "ethers"
 
-// Mock data for campaign details
-const campaignData = {
-  id: 1,
-  title: "Clean Water for Rural Communities",
-  description:
-    "Help us build sustainable water infrastructure in underserved rural areas. Every donation directly funds well construction and water purification systems that will serve thousands of families for decades to come.",
-  fullDescription: `Our mission is to provide clean, safe drinking water to rural communities that have been without access for generations. This comprehensive project includes:
-
-• Construction of 5 new water wells with solar-powered pumps
-• Installation of water purification systems in 3 existing wells  
-• Training local technicians for ongoing maintenance
-• Distribution of water storage containers to 200 families
-• Educational programs on water conservation and hygiene
-
-The impact of this project extends far beyond just providing water. Clean water access reduces disease, allows children (especially girls) to attend school instead of walking hours to fetch water, and enables economic development in these communities.
-
-We've partnered with local organizations who have deep community ties and technical expertise. 100% of donations go directly to project implementation - no administrative fees are deducted.
-
-Progress updates and photos will be shared regularly so you can see exactly how your contribution is making a difference.`,
-  goal: "50",
-  raised: "32.5",
-  progress: 65,
-  daysLeft: 23,
-  donorCount: 127,
-  category: "Environment",
-  beneficiary: "0x1234567890123456789012345678901234567890",
-  deadline: "2024-02-15",
-  created: "2024-01-01",
-  location: "Rural Kenya",
-  organizer: {
-    name: "WaterBridge Foundation",
-    verified: true,
-    campaigns: 12,
-    totalRaised: "245.8",
-  },
+async function getData(id: number) {
+  const campaign = await fetchCampaign(id)
+  const donorCount = await fetchDonationsCount(id)
+  const recentCount = Math.min(donorCount, 5)
+  const donations = await Promise.all(
+    Array.from({ length: recentCount }, (_, i) => fetchDonation(id, donorCount - 1 - i)), // latest first
+  )
+  return { campaign, donorCount, donations }
 }
 
-const recentDonations = [
-  {
-    donor: "0x1234...5678",
-    amount: "2.5",
-    message: "Clean water is a human right. Happy to support this important cause!",
-    timestamp: "2 hours ago",
-    name: "Anonymous",
-  },
-  {
-    donor: "0x9876...4321",
-    amount: "1.0",
-    message: "Great work! Looking forward to seeing the impact.",
-    timestamp: "5 hours ago",
-    name: "Sarah M.",
-  },
-  {
-    donor: "0x5555...9999",
-    amount: "5.0",
-    message: "This project will change lives. Proud to contribute.",
-    timestamp: "1 day ago",
-    name: "Community Builder",
-  },
-  {
-    donor: "0x7777...3333",
-    amount: "0.5",
-    message: "",
-    timestamp: "2 days ago",
-    name: "Anonymous",
-  },
-]
+export default async function CampaignDetailPage({ params }: { params: { id: string } }) {
+  const id = Number(params.id)
+  const { campaign, donorCount, donations } = await getData(id)
 
-export default function CampaignDetailPage({ params }: { params: { id: string } }) {
+  const raisedEth = ethers.formatEther(campaign.raisedWei)
+  const goalEth = ethers.formatEther(campaign.goalWei)
+  const progress = campaign.goalWei === BigInt(0) ? 0 : Math.min(100, Math.floor((Number(campaign.raisedWei) / Number(campaign.goalWei)) * 100))
+  const daysLeft = Math.max(0, Math.ceil((campaign.deadline - Math.floor(Date.now() / 1000)) / 86400))
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -89,25 +41,24 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             {/* Campaign Header */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Badge variant="secondary">{campaignData.category}</Badge>
+                <Badge variant="secondary">General</Badge>
                 <Badge variant="outline" className="text-green-600 border-green-600">
                   <Shield className="h-3 w-3 mr-1" />
-                  Verified
+                  On-chain
                 </Badge>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 text-balance">{campaignData.title}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 text-balance">{campaign.title}</h1>
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 mr-1" />
-                  {campaignData.location}
+                  Unknown
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
-                  Created {campaignData.created}
+                  Deadline {new Date(campaign.deadline * 1000).toLocaleDateString()}
                 </div>
-                
               </div>
 
               {/* Campaign Image */}
@@ -123,8 +74,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-muted-foreground mb-4">{campaignData.description}</p>
-                  <div className="whitespace-pre-line text-sm">{campaignData.fullDescription}</div>
+                  <p className="text-muted-foreground mb-4">{campaign.description}</p>
                 </div>
               </CardContent>
             </Card>
@@ -134,30 +84,30 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Heart className="h-5 w-5 mr-2 text-red-500" />
-                  Recent Donations ({campaignData.donorCount})
+                  Recent Donations ({donorCount})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentDonations.map((donation, index) => (
+                  {donations.map((d, index) => (
                     <div key={index} className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback>{donation.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{(d.name || "A").charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{donation.name}</span>
-                            <span className="text-xs text-muted-foreground font-mono">{donation.donor}</span>
+                            <span className="font-medium text-sm">{d.name || "Anonymous"}</span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {d.donor.slice(0, 6)}...{d.donor.slice(-4)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-accent">{donation.amount} ETH</span>
-                            <span className="text-xs text-muted-foreground">{donation.timestamp}</span>
+                            <span className="font-bold text-accent">{ethers.formatEther(d.amountWei)} ETH</span>
+                            <span className="text-xs text-muted-foreground">{new Date(d.timestamp * 1000).toLocaleString()}</span>
                           </div>
                         </div>
-                        {donation.message && (
-                          <p className="text-sm text-muted-foreground italic">"{donation.message}"</p>
-                        )}
+                        {d.message && <p className="text-sm text-muted-foreground italic">"{d.message}"</p>}
                       </div>
                     </div>
                   ))}
@@ -175,22 +125,22 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             <Card className="sticky top-24">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl font-bold text-accent">{campaignData.raised} ETH</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-accent">{raisedEth} ETH</CardTitle>
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground">of {campaignData.goal} ETH goal</div>
+                    <div className="text-sm text-muted-foreground">of {goalEth} ETH goal</div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Progress value={campaignData.progress} className="h-3" />
+                <Progress value={progress} className="h-3" />
 
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold">{campaignData.donorCount}</div>
+                    <div className="text-2xl font-bold">{donorCount}</div>
                     <div className="text-sm text-muted-foreground">Donors</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{campaignData.daysLeft}</div>
+                    <div className="text-2xl font-bold">{daysLeft}</div>
                     <div className="text-sm text-muted-foreground">Days Left</div>
                   </div>
                 </div>
@@ -198,10 +148,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 <Separator />
 
                 {/* Donation Form */}
-                <DonationForm
-                  campaignId={campaignData.id}
-                  contractAddress="0x1234567890123456789012345678901234567890"
-                />
+                <DonationForm campaignId={id} />
 
                 <Separator />
 
@@ -224,26 +171,23 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               <CardContent>
                 <div className="flex items-start gap-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarFallback>{campaignData.organizer.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{campaign.beneficiary.slice(2, 3).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium">{campaignData.organizer.name}</h4>
-                      {campaignData.organizer.verified && (
-                        <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
+                      <h4 className="font-medium">Beneficiary</h4>
+                      <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                        <Shield className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <div>{campaignData.organizer.campaigns} campaigns created</div>
-                      <div>{campaignData.organizer.totalRaised} ETH raised total</div>
+                      <div className="font-mono text-xs">{campaign.beneficiary}</div>
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full mt-4 bg-transparent" size="sm">
-                  View Profile
+                <Button variant="outline" className="w-full mt-4 bg-transparent" size="sm" asChild>
+                  <Link href={`https://sepolia.etherscan.io/address/${campaign.beneficiary}`}>View Address</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -256,20 +200,20 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Beneficiary</span>
-                  <span className="font-mono text-xs">{campaignData.beneficiary.slice(0, 10)}...</span>
+                  <span className="font-mono text-xs">{campaign.beneficiary.slice(0, 10)}...</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Deadline</span>
-                  <span>{campaignData.deadline}</span>
+                  <span>{new Date(campaign.deadline * 1000).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium">{campaignData.progress}% funded</span>
+                  <span className="font-medium">{progress}% funded</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Status</span>
                   <Badge variant="secondary" className="text-green-600">
-                    Active
+                    {campaign.withdrawn ? "Withdrawn" : "Active"}
                   </Badge>
                 </div>
               </CardContent>

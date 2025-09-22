@@ -29,6 +29,7 @@ export class WalletService {
     }
 
     try {
+      await this.ensureSepolia()
       const accounts = await this.ethereum.request({
         method: "eth_requestAccounts",
       })
@@ -110,6 +111,38 @@ export class WalletService {
     // Convert ETH to wei and then to hex
     const valueInWei = Math.floor(Number.parseFloat(value) * Math.pow(10, 18))
     return "0x" + valueInWei.toString(16)
+  }
+
+  private async ensureSepolia(): Promise<void> {
+    if (!this.ethereum) return
+    const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7"
+    try {
+      const currentChainId: string = await this.ethereum.request({ method: "eth_chainId" })
+      if (currentChainId?.toLowerCase() === SEPOLIA_CHAIN_ID_HEX) return
+      await this.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: SEPOLIA_CHAIN_ID_HEX }],
+      })
+    } catch (switchErr: any) {
+      if (switchErr && (switchErr.code === 4902 || switchErr.code === -32603)) {
+        try {
+          await this.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: SEPOLIA_CHAIN_ID_HEX,
+                chainName: "Sepolia",
+                nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                rpcUrls: ["https://ethereum-sepolia.publicnode.com"],
+                blockExplorerUrls: ["https://sepolia.etherscan.io"],
+              },
+            ],
+          })
+        } catch {
+          // ignore; user can switch manually
+        }
+      }
+    }
   }
 
   onAccountsChanged(callback: (accounts: string[]) => void): void {

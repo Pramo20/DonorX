@@ -10,13 +10,14 @@ import { Separator } from "@/components/ui/separator"
 import { WalletConnect } from "@/components/wallet-connect"
 import { Wallet, Heart, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
+import { donateOnChain } from "@/lib/contract"
 
 interface DonationFormProps {
   campaignId: number
   contractAddress?: string
 }
 
-export function DonationForm({ campaignId, contractAddress }: DonationFormProps) {
+export function DonationForm({ campaignId }: DonationFormProps) {
   const [amount, setAmount] = useState("")
   const [name, setName] = useState("")
   const [message, setMessage] = useState("")
@@ -24,7 +25,7 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
   const [success, setSuccess] = useState(false)
   const [txHash, setTxHash] = useState("")
 
-  const { isConnected, sendTransaction, error: walletError } = useWallet()
+  const { isConnected, error: walletError } = useWallet()
 
   const presetAmounts = ["0.1", "0.5", "1.0", "2.0"]
 
@@ -33,31 +34,21 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
   }
 
   const handleDonate = async () => {
-    if (!isConnected) {
-      return
-    }
-
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      return
-    }
+    if (!isConnected) return
+    if (!amount || Number.parseFloat(amount) <= 0) return
 
     setIsSubmitting(true)
     setSuccess(false)
 
     try {
-      // In a real implementation, you would encode the contract call data
-      // For now, we'll simulate the donation transaction
-      const mockContractAddress = contractAddress || "0x1234567890123456789012345678901234567890"
-
-      // This would be the encoded function call for donateToCampaign(campaignId, name, message)
-      const data = "0x" // Placeholder for encoded contract call
-
-      const hash = await sendTransaction(mockContractAddress, amount, data)
-
+      const hash = await donateOnChain({
+        campaignId,
+        name: name || "Anonymous",
+        message: message || "",
+        amountEth: amount,
+      })
       setTxHash(hash)
       setSuccess(true)
-
-      // Reset form
       setAmount("")
       setName("")
       setMessage("")
@@ -83,11 +74,6 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
             <Label>Transaction Hash:</Label>
             <div className="flex items-center gap-2 mt-1">
               <code className="text-xs bg-muted p-2 rounded font-mono break-all">{txHash}</code>
-              <Button variant="outline" size="sm" asChild>
-                <a href={`https://etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
-                  View on Etherscan
-                </a>
-              </Button>
             </div>
           </div>
         )}
@@ -125,13 +111,7 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
 
         <div className="grid grid-cols-4 gap-2">
           {presetAmounts.map((preset) => (
-            <Button
-              key={preset}
-              variant="outline"
-              size="sm"
-              onClick={() => handlePresetAmount(preset)}
-              disabled={!isConnected}
-            >
+            <Button key={preset} variant="outline" size="sm" onClick={() => handlePresetAmount(preset)} disabled={!isConnected}>
               {preset} ETH
             </Button>
           ))}
@@ -139,25 +119,12 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
 
         <div>
           <Label htmlFor="name">Your Name (Optional)</Label>
-          <Input
-            id="name"
-            placeholder="Anonymous"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={!isConnected}
-          />
+          <Input id="name" placeholder="Anonymous" value={name} onChange={(e) => setName(e.target.value)} disabled={!isConnected} />
         </div>
 
         <div>
           <Label htmlFor="message">Message (Optional)</Label>
-          <Textarea
-            id="message"
-            placeholder="Leave a message of support..."
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            disabled={!isConnected}
-          />
+          <Textarea id="message" placeholder="Leave a message of support..." rows={3} value={message} onChange={(e) => setMessage(e.target.value)} disabled={!isConnected} />
         </div>
       </div>
 
@@ -171,12 +138,7 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
       )}
 
       {isConnected ? (
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={handleDonate}
-          disabled={!amount || Number.parseFloat(amount) <= 0 || isSubmitting}
-        >
+        <Button className="w-full" size="lg" onClick={handleDonate} disabled={!amount || Number.parseFloat(amount) <= 0 || isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -193,9 +155,7 @@ export function DonationForm({ campaignId, contractAddress }: DonationFormProps)
         <WalletConnect size="lg" className="w-full" />
       )}
 
-      <div className="text-xs text-muted-foreground text-center">
-        Donations are processed instantly on the blockchain
-      </div>
+      <div className="text-xs text-muted-foreground text-center">Donations are processed instantly on the blockchain</div>
     </div>
   )
 }

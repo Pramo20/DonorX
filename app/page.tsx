@@ -3,59 +3,9 @@ import { CampaignCard } from "@/components/campaign-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, TrendingUp, Zap } from "lucide-react"
-
-// Mock data for campaigns
-const campaigns = [
-  {
-    id: 1,
-    title: "Clean Water for Rural Communities",
-    description:
-      "Help us build sustainable water infrastructure in underserved rural areas. Every donation directly funds well construction and water purification systems.",
-    goal: "50",
-    raised: "32.5",
-    progress: 65,
-    daysLeft: 23,
-    donorCount: 127,
-    category: "Environment",
-  },
-  {
-    id: 2,
-    title: "Education Technology for Schools",
-    description:
-      "Providing tablets and internet access to students in remote areas. Bridge the digital divide and ensure equal access to quality education.",
-    goal: "25",
-    raised: "18.2",
-    progress: 73,
-    daysLeft: 15,
-    donorCount: 89,
-    category: "Education",
-  },
-  {
-    id: 3,
-    title: "Emergency Medical Supplies",
-    description:
-      "Critical medical supplies for disaster relief efforts. Your contribution helps save lives in emergency situations worldwide.",
-    goal: "75",
-    raised: "41.8",
-    progress: 56,
-    daysLeft: 31,
-    donorCount: 203,
-    category: "Healthcare",
-  },
-  {
-    id: 4,
-    title: "Renewable Energy Initiative",
-    description:
-      "Solar panel installation for community centers. Sustainable energy solutions that reduce costs and environmental impact.",
-    goal: "100",
-    raised: "87.3",
-    progress: 87,
-    daysLeft: 8,
-    donorCount: 156,
-    category: "Environment",
-  },
-]
+import { Search, TrendingUp } from "lucide-react"
+import { Suspense } from "react"
+import ClientCampaignGrid from "./_sections/client-campaign-grid"
 
 const categories = ["All", "Environment", "Education", "Healthcare", "Technology", "Community"]
 
@@ -85,8 +35,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      
 
       {/* Campaigns Section */}
       <section className="py-16">
@@ -119,11 +67,9 @@ export default function HomePage() {
           </div>
 
           {/* Campaign Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {campaigns.map((campaign) => (
-              <CampaignCard key={campaign.id} {...campaign} />
-            ))}
-          </div>
+          <Suspense fallback={<div>Loading campaigns...</div>}>
+            <ClientCampaignGrid />
+          </Suspense>
 
           <div className="text-center mt-12">
             <Button variant="outline" size="lg">

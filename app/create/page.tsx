@@ -13,6 +13,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { MapPin, Target, Clock, Info, Wallet, ArrowRight, CheckCircle } from "lucide-react"
 import { useState } from "react"
+import { createCampaignOnChain } from "@/lib/contract"
+import { useRouter } from "next/navigation"
 
 const categories = [
   "Environment",
@@ -45,6 +47,8 @@ export default function CreateCampaignPage() {
     location: "",
     beneficiary: "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
 
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
@@ -62,6 +66,26 @@ export default function CreateCampaignPage() {
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleCreate = async () => {
+    if (!formData.title || !formData.description || !formData.goal || !formData.duration || !formData.beneficiary) return
+    setIsSubmitting(true)
+    try {
+      const id = await createCampaignOnChain({
+        beneficiary: formData.beneficiary,
+        title: formData.title,
+        description: formData.description,
+        goalEth: formData.goal,
+        durationDays: Number(formData.duration),
+      })
+      router.push(`/campaign/${id}`)
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -173,10 +197,7 @@ export default function CreateCampaignPage() {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="category">Category *</Label>
-                          <Select
-                            value={formData.category}
-                            onValueChange={(value) => handleInputChange("category", value)}
-                          >
+                          <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
@@ -217,17 +238,12 @@ export default function CreateCampaignPage() {
                           value={formData.goal}
                           onChange={(e) => handleInputChange("goal", e.target.value)}
                         />
-                        <p className="text-sm text-muted-foreground">
-                          Set a realistic goal that covers your project needs
-                        </p>
+                        <p className="text-sm text-muted-foreground">Set a realistic goal that covers your project needs</p>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="duration">Campaign Duration *</Label>
-                        <Select
-                          value={formData.duration}
-                          onValueChange={(value) => handleInputChange("duration", value)}
-                        >
+                        <Select value={formData.duration} onValueChange={(value) => handleInputChange("duration", value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="How long will your campaign run?" />
                           </SelectTrigger>
@@ -250,16 +266,13 @@ export default function CreateCampaignPage() {
                           onChange={(e) => handleInputChange("beneficiary", e.target.value)}
                           className="font-mono text-sm"
                         />
-                        <p className="text-sm text-muted-foreground">
-                          The Ethereum address that will receive the funds
-                        </p>
+                        <p className="text-sm text-muted-foreground">The Ethereum address that will receive the funds</p>
                       </div>
 
                       <Alert>
                         <Info className="h-4 w-4" />
                         <AlertDescription>
-                          Once your campaign is created, these settings cannot be changed. Make sure all information is
-                          correct.
+                          Once your campaign is created, these settings cannot be changed. Make sure all information is correct.
                         </AlertDescription>
                       </Alert>
                     </>
@@ -283,16 +296,14 @@ export default function CreateCampaignPage() {
                           </div>
 
                           <h4 className="text-xl font-bold">{formData.title || "Campaign Title"}</h4>
-                          <p className="text-muted-foreground">
-                            {formData.description || "Campaign description will appear here"}
-                          </p>
+                          <p className="text-muted-foreground">{formData.description || "Campaign description will appear here"}</p>
 
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between text.sm">
                             <div className="flex items-center">
                               <Target className="h-4 w-4 mr-1" />
                               Goal: {formData.goal || "0"} ETH
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex items.center">
                               <Clock className="h-4 w-4 mr-1" />
                               {formData.duration || "0"} days
                             </div>
@@ -322,9 +333,7 @@ export default function CreateCampaignPage() {
 
                       <Alert>
                         <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Your campaign is ready to launch! Creating the campaign will require a small gas fee.
-                        </AlertDescription>
+                        <AlertDescription>Your campaign is ready to launch! Creating the campaign will require a small gas fee.</AlertDescription>
                       </Alert>
                     </div>
                   )}
@@ -341,9 +350,9 @@ export default function CreateCampaignPage() {
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     ) : (
-                      <Button className="bg-accent hover:bg-accent/90">
+                      <Button className="bg-accent hover:bg-accent/90 text-black" onClick={handleCreate} disabled={isSubmitting}>
                         <Wallet className="h-4 w-4 mr-2" />
-                        Create Campaign
+                        {isSubmitting ? "Creating..." : "Create Campaign"}
                       </Button>
                     )}
                   </div>
@@ -396,9 +405,7 @@ export default function CreateCampaignPage() {
                     <span className="font-medium">Network dependent</span>
                   </div>
                   <Separator />
-                  <p className="text-muted-foreground text-xs">
-                    100% of donations go directly to your campaign. Only network gas fees apply.
-                  </p>
+                  <p className="text-muted-foreground text-xs">100% of donations go directly to your campaign. Only network gas fees apply.</p>
                 </CardContent>
               </Card>
 
