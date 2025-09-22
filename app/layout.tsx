@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "CryptoGive - Decentralized Donation Platform",
+  title: "DonorX - Decentralized Crypto Donation Platform",
   description: "Support causes you care about with transparent, blockchain-based donations",
   generator: "v0.app",
 }
