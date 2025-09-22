@@ -120,7 +120,7 @@ export default function CreateCampaignPage() {
                 >
                   {currentStep > 1 ? <CheckCircle className="h-4 w-4" /> : "1"}
                 </div>
-                <span className="text-sm font-medium">Campaign Details</span>
+                <span className="text-sm font-medium text-black">Campaign Details</span>
               </div>
 
               <div className={`flex items-center gap-2 ${currentStep >= 2 ? "text-accent" : "text-muted-foreground"}`}>
@@ -131,7 +131,7 @@ export default function CreateCampaignPage() {
                 >
                   {currentStep > 2 ? <CheckCircle className="h-4 w-4" /> : "2"}
                 </div>
-                <span className="text-sm font-medium">Funding & Timeline</span>
+                <span className="text-sm font-medium text-black">Funding & Timeline</span>
               </div>
 
               <div className={`flex items-center gap-2 ${currentStep >= 3 ? "text-accent" : "text-muted-foreground"}`}>
@@ -142,7 +142,7 @@ export default function CreateCampaignPage() {
                 >
                   {currentStep > 3 ? <CheckCircle className="h-4 w-4" /> : "3"}
                 </div>
-                <span className="text-sm font-medium">Review & Launch</span>
+                <span className="text-sm font-medium text-black">Review & Launch</span>
               </div>
             </div>
           </div>

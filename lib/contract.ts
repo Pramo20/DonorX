@@ -20,7 +20,7 @@ export interface DonationDto {
 }
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string
-const RPC_URL = "https://ethereum-sepolia.publicnode.com"
+const RPC_URL = "https://rpc.sepolia.org"
 const SEPOLIA_CHAIN_ID_DEC = 11155111
 const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7"
 
@@ -33,15 +33,30 @@ if (!CONTRACT_ADDRESS) {
 const DONATION_PORTAL_ABI = [
   // reads
   "function campaignCount() view returns (uint256)",
+  "function campaigns(uint256 id) view returns (uint256,address,string,string,uint256,uint256,uint256,bool,bool)",
   "function getCampaign(uint256 id) view returns (uint256,address,string,string,uint256,uint256,uint256,bool)",
   "function getDonationsCount(uint256 campaignId) view returns (uint256)",
   "function getDonation(uint256 campaignId, uint256 index) view returns (address,uint256,string,string,uint256)",
   // writes
   "function createCampaign(address payable beneficiary, string title, string description, uint256 goal, uint256 durationSeconds) returns (uint256)",
   "function donateToCampaign(uint256 campaignId, string name, string message) payable",
+  "function withdraw(uint256 campaignId, uint256 amount)",
+  "function refund(uint256 campaignId, uint256 donationIndex)",
+  // admin
+  "function pauseContract(bool val)",
 ]
 
-export function getReadProvider(): ethers.JsonRpcProvider {
+export function getReadProvider(): ethers.Provider {
+  // Option 1: Use MetaMask directly when available in the browser
+  if (typeof window !== "undefined") {
+    const { ethereum } = window as any
+    if (ethereum) {
+      // Ensure Sepolia and use the wallet's provider for reads
+      ensureSepoliaNetwork(ethereum).catch(() => {})
+      return new ethers.BrowserProvider(ethereum)
+    }
+  }
+  // Fallback (SSR or no wallet): Sepolia public RPC
   return new ethers.JsonRpcProvider(RPC_URL)
 }
 
@@ -57,6 +72,9 @@ export async function getSigner(): Promise<ethers.Signer> {
 
 export function getReadContract() {
   const provider = getReadProvider()
+  if (!CONTRACT_ADDRESS || !/^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS)) {
+    throw new Error("Contract address is not set or invalid. Set NEXT_PUBLIC_CONTRACT_ADDRESS to a Sepolia address")
+  }
   return new ethers.Contract(CONTRACT_ADDRESS, DONATION_PORTAL_ABI, provider)
 }
 
@@ -72,21 +90,32 @@ export async function getWriteContract() {
     // If we cannot determine the network, be safe and block
     throw new Error("Unable to verify network. Please use Sepolia testnet")
   }
+  if (!CONTRACT_ADDRESS || !/^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS)) {
+    throw new Error("Contract address is not set or invalid. Set NEXT_PUBLIC_CONTRACT_ADDRESS to a Sepolia address")
+  }
   return new ethers.Contract(CONTRACT_ADDRESS, DONATION_PORTAL_ABI, signer)
 }
 
 export async function fetchCampaignCount(): Promise<number> {
-  await assertSepoliaRead()
+  try {
+    await assertSepoliaRead()
+  } catch {}
   const c = getReadContract()
   const count: bigint = await c.campaignCount()
   return Number(count)
 }
 
 export async function fetchCampaign(id: number): Promise<CampaignDto> {
-  await assertSepoliaRead()
+  try {
+    await assertSepoliaRead()
+  } catch {}
   const c = getReadContract()
-  const result = await c.getCampaign(id)
-  // (id, beneficiary, title, description, goal, raised, deadline, withdrawn)
+  // Prefer campaigns(id) public getter to avoid modifier reverts
+  const result = await c.campaigns(id)
+  const exists = result[7] as boolean
+  if (!exists) {
+    throw new Error("Campaign not found")
+  }
   return {
     id: Number(result[0]),
     beneficiary: result[1] as string,
@@ -95,19 +124,23 @@ export async function fetchCampaign(id: number): Promise<CampaignDto> {
     goalWei: result[4] as bigint,
     raisedWei: result[5] as bigint,
     deadline: Number(result[6]),
-    withdrawn: result[7] as boolean,
+    withdrawn: result[8] as boolean,
   }
 }
 
 export async function fetchDonationsCount(campaignId: number): Promise<number> {
-  await assertSepoliaRead()
+  try {
+    await assertSepoliaRead()
+  } catch {}
   const c = getReadContract()
   const count: bigint = await c.getDonationsCount(campaignId)
   return Number(count)
 }
 
 export async function fetchDonation(campaignId: number, index: number): Promise<DonationDto> {
-  await assertSepoliaRead()
+  try {
+    await assertSepoliaRead()
+  } catch {}
   const c = getReadContract()
   const result = await c.getDonation(campaignId, index)
   return {
@@ -122,7 +155,9 @@ export async function fetchDonation(campaignId: number, index: number): Promise<
 export async function listCampaigns(): Promise<
   Array<CampaignDto & { donorCount: number; raisedEth: string; goalEth: string; progressPct: number; daysLeft: number }>
 > {
-  await assertSepoliaRead()
+  try {
+    await assertSepoliaRead()
+  } catch {}
   const count = await fetchCampaignCount()
   const ids = Array.from({ length: count }, (_, i) => i + 1)
   const campaigns = await Promise.all(ids.map((id) => fetchCampaign(id)))
@@ -177,14 +212,24 @@ async function ensureSepoliaNetwork(ethereum: any): Promise<void> {
 }
 
 async function assertSepoliaRead(): Promise<void> {
+  // On the server, don't block rendering if RPC verification fails; we already use a Sepolia RPC URL.
+  if (typeof window === "undefined") {
+    return
+  }
+
   const provider = getReadProvider()
   try {
-    const net = await provider.getNetwork()
-    if (Number(net.chainId) !== SEPOLIA_CHAIN_ID_DEC) {
-      throw new Error("Configured RPC is not Sepolia. Please use a Sepolia RPC URL")
+    if ((provider as any).provider && (window as any).ethereum) {
+      const chainIdHex: string = await (window as any).ethereum.request({ method: "eth_chainId" })
+      const chainId = Number.parseInt(chainIdHex, 16)
+      if (chainId !== SEPOLIA_CHAIN_ID_DEC) {
+        throw new Error("Wrong network: please switch to Sepolia testnet")
+      }
+      return
     }
   } catch {
-    throw new Error("Unable to verify RPC network. Please use a Sepolia RPC URL")
+    // In the browser without ethereum, just rely on RPC; don't block UI
+    return
   }
 }
 
@@ -237,3 +282,25 @@ export async function donateOnChain(params: {
   const receipt = await tx.wait()
   return receipt.hash
 } 
+
+export async function withdrawOnChain(params: { campaignId: number; amountEth: string }): Promise<string> {
+  const contract = await getWriteContract()
+  const amountWei = ethers.parseEther(params.amountEth)
+  const tx = await contract.withdraw(params.campaignId, amountWei)
+  const receipt = await tx.wait()
+  return receipt.hash
+}
+
+export async function refundOnChain(params: { campaignId: number; donationIndex: number }): Promise<string> {
+  const contract = await getWriteContract()
+  const tx = await contract.refund(params.campaignId, params.donationIndex)
+  const receipt = await tx.wait()
+  return receipt.hash
+}
+
+export async function pauseContractOnChain(paused: boolean): Promise<string> {
+  const contract = await getWriteContract()
+  const tx = await contract.pauseContract(paused)
+  const receipt = await tx.wait()
+  return receipt.hash
+}

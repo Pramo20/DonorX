@@ -26,6 +26,7 @@ export function DonationForm({ campaignId }: DonationFormProps) {
   const [txHash, setTxHash] = useState("")
 
   const { isConnected, error: walletError } = useWallet()
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const presetAmounts = ["0.1", "0.5", "1.0", "2.0"]
 
@@ -39,6 +40,7 @@ export function DonationForm({ campaignId }: DonationFormProps) {
 
     setIsSubmitting(true)
     setSuccess(false)
+    setLocalError(null)
 
     try {
       const hash = await donateOnChain({
@@ -54,6 +56,8 @@ export function DonationForm({ campaignId }: DonationFormProps) {
       setMessage("")
     } catch (error) {
       console.error("Donation failed:", error)
+      const message = (error as any)?.message || "Donation failed. Please try again."
+      setLocalError(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -134,6 +138,12 @@ export function DonationForm({ campaignId }: DonationFormProps) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{walletError}</AlertDescription>
+        </Alert>
+      )}
+      {localError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{localError}</AlertDescription>
         </Alert>
       )}
 

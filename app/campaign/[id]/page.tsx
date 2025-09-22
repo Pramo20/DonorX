@@ -10,6 +10,7 @@ import { Share2, Heart, Calendar, MapPin, Shield } from "lucide-react"
 import Link from "next/link"
 import { fetchCampaign, fetchDonationsCount, fetchDonation } from "@/lib/contract"
 import { ethers } from "ethers"
+import { CampaignActions } from "@/components/campaign-actions"
 
 async function getData(id: number) {
   const campaign = await fetchCampaign(id)
@@ -23,7 +24,29 @@ async function getData(id: number) {
 
 export default async function CampaignDetailPage({ params }: { params: { id: string } }) {
   const id = Number(params.id)
-  const { campaign, donorCount, donations } = await getData(id)
+  let campaign, donorCount, donations
+  try {
+    const data = await getData(id)
+    campaign = data.campaign
+    donorCount = data.donorCount
+    donations = data.donations
+  } catch (e: any) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Not Found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{e?.message || "We couldn't find this campaign on Sepolia."}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   const raisedEth = ethers.formatEther(campaign.raisedWei)
   const goalEth = ethers.formatEther(campaign.goalWei)
@@ -160,6 +183,17 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
                     Share
                   </Button>
                 </div>
+
+                <Separator />
+
+                {/* Campaign Actions: Withdraw / Refund */}
+                <CampaignActions
+                  campaignId={id}
+                  beneficiary={campaign.beneficiary}
+                  deadline={campaign.deadline}
+                  goalWei={campaign.goalWei}
+                  raisedWei={campaign.raisedWei}
+                />
               </CardContent>
             </Card>
 
@@ -195,7 +229,7 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
             {/* Campaign Stats */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Campaign Details</CardTitle>
+                <CardTitle className="text-lg ">Campaign Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
