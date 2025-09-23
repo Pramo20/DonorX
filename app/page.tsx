@@ -14,27 +14,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
-      <section className="hero-gradient text-primary-foreground">
-        <div className="container mx-auto px-4 py-16 md:py-20">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge variant="secondary" className="mb-6 bg-white/10 text-white border-white/20">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Transparent • Decentralized • Secure
-            </Badge>
-
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-balance text-black">
-              Fund the Future with
-              <span className="text-gray-600"> Crypto Donations</span>
-            </h1>
-
-            <p className="text-xl md:text-2xl bg-gradient-to-br from-gray-300 to-gray-500 bg-clip-text text-transparent mb-8 text-pretty max-w-3xl mx-auto">
-              Support causes you care about with transparent, blockchain-based donations. Every contribution is tracked,
-              verified, and makes a real impact.
-            </p>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Campaigns Section */}
       <section className="py-16">

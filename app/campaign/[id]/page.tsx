@@ -127,7 +127,6 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
       <div className="container py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -141,9 +140,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   On-chain
                 </Badge>
               </div>
-
               <h1 className="text-3xl md:text-4xl font-bold mb-4 text-balance">{campaign.title}</h1>
-
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 mr-1" />
@@ -154,13 +151,11 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   Deadline {new Date(campaign.deadline * 1000).toLocaleDateString()}
                 </div>
               </div>
-
               {/* Campaign Image */}
               <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center mb-6">
                 <div className="text-8xl opacity-20">💧</div>
               </div>
             </div>
-
             {/* Campaign Description */}
             <Card>
               <CardHeader>
@@ -172,13 +167,12 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 </div>
               </CardContent>
             </Card>
-
             {/* Recent Donations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Heart className="h-5 w-5 mr-2 text-red-500" />
-                  Recent Donations ({donorCount})
+                  Recent Donations
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -197,7 +191,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-accent">{ethers.formatEther(d.amountWei)} ETH</span>
+                            <span className="font-bold text-accent text-black">{ethers.formatEther(d.amountWei)} ETH</span>
                             <span className="text-xs text-muted-foreground">{new Date(d.timestamp * 1000).toLocaleString()}</span>
                           </div>
                         </div>
@@ -212,22 +206,20 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               </CardContent>
             </Card>
           </div>
-
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Donation Card */}
             <Card className="sticky top-24">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-2xl font-bold text-accent">{raisedEth} ETH</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-accent text-black">{raisedEth} ETH</CardTitle>
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground">of {goalEth} ETH goal</div>
+                    <div className="text-sm text-muted-foreground ">of {goalEth} ETH goal</div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <Progress value={progress} className="h-3" />
-
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
                     <div className="text-2xl font-bold">{donorCount}</div>
@@ -238,16 +230,11 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                     <div className="text-sm text-muted-foreground">Days Left</div>
                   </div>
                 </div>
-
                 <Separator />
-
                 {/* Donation Form */}
                 <DonationForm campaignId={id} />
-
-                {/* Removed Share and Withdraw/Refund sections per user request */}
               </CardContent>
             </Card>
-
             {/* Organizer Info */}
             <Card>
               <CardHeader>
@@ -276,7 +263,6 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 </Button>
               </CardContent>
             </Card>
-
             {/* Campaign Stats */}
             <Card>
               <CardHeader>

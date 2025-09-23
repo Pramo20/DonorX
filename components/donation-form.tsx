@@ -107,7 +107,7 @@ export function DonationForm({ campaignId }: DonationFormProps) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You are on the wrong network. Please switch to Sepolia to donate.
+            You are on the wrong network. Please switch to Sepolia to donate. You can still fill the form, but donation will not process until you switch.
           </AlertDescription>
         </Alert>
       )}

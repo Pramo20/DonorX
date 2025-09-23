@@ -147,9 +147,9 @@ export default function CreateCampaignPage() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="flex justify-center">
             {/* Main Form */}
-            <div className="lg:col-span-2">
+            <div className="w-full max-w-2xl">
               <Card>
                 <CardHeader>
                   <CardTitle>
@@ -360,83 +360,7 @@ export default function CreateCampaignPage() {
               </Card>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Tips Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Campaign Tips</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                  <div>
-                    <h4 className="font-medium mb-2">Write a compelling title</h4>
-                    <p className="text-muted-foreground">Clear, specific titles perform better than vague ones</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Set a realistic goal</h4>
-                    <p className="text-muted-foreground">Campaigns with achievable goals are more likely to succeed</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Tell your story</h4>
-                    <p className="text-muted-foreground">Explain the impact and why people should care</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Share updates</h4>
-                    <p className="text-muted-foreground">Keep supporters engaged with regular progress updates</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Fees Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Platform Fees</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span>Platform Fee:</span>
-                    <span className="font-medium">0%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Gas Fees:</span>
-                    <span className="font-medium">Network dependent</span>
-                  </div>
-                  <Separator />
-                  <p className="text-muted-foreground text-xs">100% of donations go directly to your campaign. Only network gas fees apply.</p>
-                </CardContent>
-              </Card>
-
-              {/* Security Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                    Security Features
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <span>Smart contract verified</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <span>Transparent fund tracking</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <span>Refund protection</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <span>Immutable records</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+     
           </div>
         </div>
       </div>
